@@ -2,16 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-// **CRITICAL FIX: Replacing faulty import with the correct 'record' package**
 import 'package:record/record.dart'; 
 import 'package:web_socket_channel/io.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // --- CONFIGURATION ---
-// IMPORTANT: Replace this with the IP address and port of your Python server.
+// Ensure this matches the output of: gcloud run services describe ...
 const String websocketUrl = 'wss://quest-transcriber-523298308672.asia-southeast1.run.app'; 
-
-// Audio settings must match the server's expectation 
 const int sampleRate = 16000;
 const int channels = 1; // Mono
 // --- END CONFIGURATION ---
@@ -26,7 +23,7 @@ class TranscriptionScreen extends StatefulWidget {
 class _TranscriptionScreenState extends State<TranscriptionScreen> {
   IOWebSocketChannel? _channel;
   StreamSubscription<Uint8List>? _micSubscription;
-  final AudioRecorder _audioRecorder = AudioRecorder(); // Instance of AudioRecorder
+  final AudioRecorder _audioRecorder = AudioRecorder(); 
   
   String _status = 'Initializing...';
   String _transcribedText = ''; 
@@ -38,102 +35,110 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
     _requestPermissionsAndConnect();
   }
 
-  // 1. Request Microphone Permission and Start Connection Attempt
   Future<void> _requestPermissionsAndConnect() async {
+    debugPrint("🔍 Checking permissions...");
     setState(() => _status = 'Requesting Mic Permission...');
     
-    // 1. Request microphone permission
-    final status = await Permission.microphone.request();
+    var status = await Permission.microphone.request();
     
     if (status.isGranted) {
-      // FIX: Removed the incomplete line that caused the 'is' error.
-      // Permission is granted, so we proceed directly to connection.
-      
+      debugPrint("✅ Permission Granted. Connecting to server...");
       _connectWebSocket();
     } else {
-      setState(() => _status = 'Mic Permission Denied. Cannot start streaming.');
+      debugPrint("❌ Permission Denied.");
+      setState(() => _status = 'Mic Permission Denied. Check Settings.');
       if (status.isPermanentlyDenied) {
-        debugPrint('Microphone permission permanently denied. Please enable in Quest settings.');
+        openAppSettings();
       }
     }
   }
 
-  // 2. WebSocket Connection and Listener
   void _connectWebSocket() {
     try {
+      debugPrint("🔵 Connecting to: $websocketUrl");
       _channel = IOWebSocketChannel.connect(Uri.parse(websocketUrl));
-      setState(() => _status = 'Connecting to Server...');
+      
+      setState(() => _status = 'Connecting...');
       
       _channel!.stream.listen(
         (message) {
+          debugPrint("⬇️ RECEIVED: $message");
+          if (!_status.contains('Connected')) {
+             setState(() => _status = 'Connected & Transcribing');
+          }
           _handleTranscription(message.toString());
         },
         onDone: () {
+          debugPrint("🔶 WebSocket Closed by Server");
           setState(() {
             _status = 'Disconnected (Server Closed)';
             _stopStreaming();
           });
         },
         onError: (error) {
+          debugPrint("❌ WebSocket Error: $error");
           setState(() {
-            _status = 'Connection Error. Retrying in 5s...';
+            _status = 'Connection Error. Retrying...';
             _stopStreaming();
             Future.delayed(const Duration(seconds: 5), _connectWebSocket);
           });
-          debugPrint('WebSocket Error: $error');
         },
       );
 
-      setState(() => _status = 'Connected. Ready to start streaming.');
-
     } catch (e) {
-      setState(() => _status = 'Failed to connect: $e. Retrying in 5s...');
+      debugPrint("❌ Connection Failed Exception: $e");
+      setState(() => _status = 'Failed to connect: $e');
       Future.delayed(const Duration(seconds: 5), _connectWebSocket);
-      debugPrint('Connection failed: $e');
     }
   }
 
-  // 3. Handle incoming transcription messages
   void _handleTranscription(String message) {
-    if (mounted) {
-      // Logic for determining final vs. interim results
-      if (message.endsWith('.') || message.endsWith('?') || message.endsWith('!')) {
-        setState(() {
-          _transcribedText += '$_interimText $message\n'; // Append final result
-          _interimText = ''; // Clear interim
-        });
+    if (!mounted) return;
+
+    bool isFinal = message.endsWith('.') || message.endsWith('?') || message.endsWith('!');
+    
+    setState(() {
+      if (isFinal) {
+        _transcribedText += '$_interimText $message\n'; 
+        _interimText = ''; 
       } else {
-        setState(() {
-          _interimText = message; // Update the real-time interim result
-        });
+        _interimText = message; 
       }
-    }
+    });
   }
 
-  // 4. Start Microphone and Stream to WebSocket
   Future<void> _startStreaming() async {
-    if (_channel == null || _status.contains('Connected') == false) {
+    if (_channel == null) {
+      debugPrint("⚠️ WebSocket null, reconnecting...");
       _connectWebSocket();
-      if (_status.contains('Connected') == false) return;
+      return;
     }
 
-    // Check if recording is already active
-    if (await _audioRecorder.isRecording()) return; 
+    if (await _audioRecorder.isRecording()) {
+      return;
+    }
 
     try {
-      // Configure and start recording raw bytes (startStream is the key method)
+      debugPrint("🎙️ Initializing Mic Stream...");
+      
       final micStream = await _audioRecorder.startStream(
         const RecordConfig(
-          encoder: AudioEncoder.pcm16bits, // 16-bit PCM is critical for ASR
+          encoder: AudioEncoder.pcm16bits, 
           sampleRate: sampleRate,
           numChannels: channels,
         ),
       );
 
       _micSubscription = micStream.listen((audioChunk) {
-        // Send raw binary data (Uint8List)
-        _channel!.sink.add(audioChunk); 
+        // FIX: Uncommented this line so you can see data flowing in the logs!
+        debugPrint("🎤 Mic captured ${audioChunk.length} bytes");
+        try {
+          _channel!.sink.add(audioChunk); 
+        } catch (e) {
+          debugPrint("❌ Error sending bytes: $e");
+        }
       }, onError: (e) {
+        debugPrint("❌ Mic Stream Error: $e");
         setState(() => _status = 'Mic Stream Error: $e');
         _stopStreaming();
       });
@@ -142,33 +147,35 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
         _status = 'Streaming Audio...';
         _transcribedText = ''; 
         _interimText = '';
-        // Send a control command to the server to signal the start of a stream
         _channel!.sink.add('START_STREAMING'); 
       });
+      debugPrint("✅ Audio Streaming Started");
 
     } catch (e) {
-      setState(() => _status = 'Audio stream setup failed: $e');
+      debugPrint("❌ Start Stream Exception: $e");
+      setState(() => _status = 'Audio setup failed: $e');
       _stopStreaming();
-      debugPrint('Audio stream setup failed: $e');
     }
   }
 
-  // 5. Stop Streaming and Clean Up
   void _stopStreaming() async {
+    debugPrint("🛑 Stopping Stream...");
     _micSubscription?.cancel();
     _micSubscription = null;
-    await _audioRecorder.stop(); // Stop the audio stream using the record API
+    await _audioRecorder.stop();
     
-    if (_channel != null && _status.contains('Connected')) {
-      // Send a control command to the server to signal the end of a stream
-      _channel!.sink.add('STOP_STREAMING'); 
+    try {
+      if (_channel != null) {
+        _channel!.sink.add('STOP_STREAMING'); 
+      }
+    } catch (e) {
+      // Ignore errors sending stop
     }
     
     if (mounted) {
       setState(() {
         _status = 'Ready to Start';
         if (_interimText.isNotEmpty) {
-          // If there's pending interim text, finalize it
           _transcribedText += '$_interimText (Stopped)\n';
           _interimText = '';
         }
@@ -185,9 +192,8 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if the recorder is actively streaming (we use the subscription status)
     final isStreaming = _micSubscription != null; 
-    final isConnected = _status.contains('Connected') && !isStreaming;
+    final isConnected = !_status.contains('Error') && !_status.contains('Disconnected');
 
     return Scaffold(
       appBar: AppBar(
@@ -199,7 +205,6 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // Status Indicator
             Text(
               'Status: $_status', 
               style: TextStyle(
@@ -209,7 +214,6 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Real-time Interim Text Display (Highlight for VR viewing)
             Container(
               padding: const EdgeInsets.all(20),
               width: double.infinity,
@@ -242,7 +246,6 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             
-            // Final Transcribed Text History
             Expanded(
               child: Container(
                 padding: const EdgeInsets.only(top: 8),
@@ -257,7 +260,6 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
             
             const SizedBox(height: 20),
 
-            // Start/Stop Button
             Center(
               child: ElevatedButton.icon(
                 onPressed: isStreaming ? _stopStreaming : isConnected ? _startStreaming : null,

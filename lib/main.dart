@@ -1,7 +1,21 @@
+import 'dart:io'; // Required for HttpOverrides
 import 'package:flutter/material.dart';
-import 'startTranslation.dart'; // Import the transcription screen
+import 'startTranslation.dart'; 
+
+// --- SSL BYPASS CLASS ---
+// This tells the app to ignore certificate errors (common fix for Android dev)
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 void main() {
+  // Apply the SSL bypass globally before the app starts
+  HttpOverrides.global = MyHttpOverrides();
+  
   runApp(const MyApp());
 }
 
@@ -13,18 +27,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SmartSense Quest3',
       theme: ThemeData(
-        // Keeping your original deepPurple theme
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'SmartSense Home'), // Updated title
+      home: const MyHomePage(title: 'SmartSense Home'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
   final String title;
 
   @override
@@ -32,8 +44,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
-  // Function to handle navigation to the TranscriptionScreen
   void _navigateToTranslation(BuildContext context) {
     Navigator.push(
       context,
@@ -43,7 +53,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // This is the main screen with the navigation button.
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -58,8 +67,6 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 40),
-            
-            // The Navigation Button
             ElevatedButton.icon(
               onPressed: () => _navigateToTranslation(context),
               icon: const Icon(Icons.headset_mic, size: 30),
@@ -80,7 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      // Removed the floating action button for the counter
     );
   }
 }
