@@ -1,6 +1,7 @@
 import 'dart:io'; // Required for HttpOverrides
 import 'package:flutter/material.dart';
-import 'startTranslation.dart'; 
+import 'landing-page.dart'; // Import the landing-page.dart file
+import 'main-interface.dart'; // Import the main-interface.dart file
 
 // --- SSL BYPASS CLASS ---
 // This tells the app to ignore certificate errors (common fix for Android dev)
@@ -12,10 +13,8 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
+
 void main() {
-  // Apply the SSL bypass globally before the app starts
-  HttpOverrides.global = MyHttpOverrides();
-  
   runApp(const MyApp());
 }
 
@@ -25,68 +24,37 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SmartSense Quest3',
+      title: 'SmartSense Meta Quest 3',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'SmartSense Home'),
+      home: const LoadingPage(), // Set LoadingPage as the initial screen
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
+class LoadingPage extends StatefulWidget {
+  const LoadingPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<LoadingPage> createState() => _LoadingPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  void _navigateToTranslation(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const TranscriptionScreen()),
-    );
+class _LoadingPageState extends State<LoadingPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Simulate loading process
+    Future.delayed(const Duration(seconds: 3), () {
+      // After the loading time, navigate to the main interface
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainInterface()),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Welcome to SmartSense for Quest 3',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: () => _navigateToTranslation(context),
-              icon: const Icon(Icons.headset_mic, size: 30),
-              label: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                child: Text(
-                  'Start Real-time Transcription',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const LandingPage(); // Display your existing landing-page.dart content as the loading screen
   }
 }

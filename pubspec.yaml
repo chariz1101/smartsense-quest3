@@ -21,7 +21,9 @@ dependencies:
   record: ^6.1.2
 
 
+  shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.8
+  frame_sdk: ^0.0.7
 
 dev_dependencies:
   flutter_test:
@@ -31,4 +33,27 @@ dev_dependencies:
 flutter:
 
   uses-material-design: true
+
+  fonts:
+  - family: SmartSense # Choose a name for your font family
+    fonts:
+        - asset: assets/fonts/LilitaOne-Regular.ttf
+  - family: Manrope
+    fonts:
+        - asset: assets/fonts/Manrope-ExtraBold.otf
+        - asset: assets/fonts/Manrope-Regular.otf
+        - asset: assets/fonts/Manrope-SemiBold.otf
+
+  assets:
+    - assets/icons/linkedin.png
+    - assets/icons/icon-park-outline_alignment-left-bottom.png
+    - assets/icons/tabler_align-box-center-bottom.png
+    - assets/icons/tabler_align-box-center-middle.png
+    - assets/icons/tabler_align-box-left-middle.png
+    - assets/icons/tabler_align-box-right-bottom.png
+    - assets/icons/tabler_align-box-right-middle.png
+    - assets/purple-glasses.png
+    - assets/white-glasses.png
+    - assets/code3.png
+
 

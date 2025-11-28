@@ -13,14 +13,14 @@ const int sampleRate = 16000;
 const int channels = 1; // Mono
 // --- END CONFIGURATION ---
 
-class TranscriptionScreen extends StatefulWidget {
-  const TranscriptionScreen({super.key});
+class LocalTranscriptionScreen extends StatefulWidget {
+  const LocalTranscriptionScreen({super.key});
 
   @override
-  State<TranscriptionScreen> createState() => _TranscriptionScreenState();
+  State<LocalTranscriptionScreen> createState() => _LocalTranscriptionScreenState();
 }
 
-class _TranscriptionScreenState extends State<TranscriptionScreen> {
+class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
   IOWebSocketChannel? _channel;
   StreamSubscription<Uint8List>? _micSubscription;
   final AudioRecorder _audioRecorder = AudioRecorder(); 
@@ -197,7 +197,7 @@ class _TranscriptionScreenState extends State<TranscriptionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quest 3 Cloud Transcription'),
+        title: const Text('Quest 3 Local Transcription'),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       ),
       body: Padding(
