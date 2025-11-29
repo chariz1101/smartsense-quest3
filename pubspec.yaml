@@ -44,7 +44,7 @@ flutter:
 
   # FIX: Indent 'assets' so it is part of the 'flutter' section
   assets:
-    - assets/models/vosk-model-small-en-us-0.15/
+    - assets/models/smartsense_model.zip
     - assets/icons/linkedin.png
     - assets/icons/icon-park-outline_alignment-left-bottom.png
     - assets/icons/tabler_align-box-center-bottom.png

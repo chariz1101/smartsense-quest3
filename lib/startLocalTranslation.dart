@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert'; // For JSON decoding
+import 'dart:io'; // REQUIRED: To check directory structure
 
 import 'package:flutter/material.dart';
-import 'package:vosk_flutter/vosk_flutter.dart'; // REQUIRED: Add vosk_flutter to pubspec.yaml
+import 'package:flutter/services.dart'; // REQUIRED: For rootBundle check
+import 'package:vosk_flutter/vosk_flutter.dart'; 
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,8 +38,8 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
   Alignment _displayContainerAlignment = Alignment.center;
 
   // --- MODEL PATH CONFIGURATION ---
-  // Ensure this folder exists in your assets and is declared in pubspec.yaml
-  final String _modelAssetPath = 'assets/models/vosk-model-small-en-us-0.15';
+  // Ensure this matches your pubspec.yaml asset exactly
+  final String _modelAssetPath = 'assets/models/smartsense_model.zip';
 
   @override
   void initState() {
@@ -88,21 +90,73 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
     }
 
     try {
-      setState(() => _status = 'Loading Model...');
+      setState(() => _status = 'Verifying Asset Bundle...');
+
+      // --- DIAGNOSTIC CHECK (With Size) ---
+      try {
+        final byteData = await rootBundle.load(_modelAssetPath);
+        debugPrint("✅ Asset found in bundle: $_modelAssetPath");
+        debugPrint("📦 Size: ${(byteData.lengthInBytes / 1024 / 1024).toStringAsFixed(2)} MB");
+        
+        if (byteData.lengthInBytes < 1000) {
+           throw Exception("File is too small (Empty?). Check the zip file.");
+        }
+      } catch (e) {
+        debugPrint("Asset Load Error: $e");
+        throw Exception("ASSET NOT FOUND IN BUNDLE. Check pubspec.yaml indentation or filename.");
+      }
+      // ------------------------------------
+
+      setState(() => _status = 'Extracting Model...');
       
-      // 2. Load Model from Assets
-      final modelPath = await ModelLoader().loadFromAssets(_modelAssetPath);
+      // 2. Load Model from Assets (Extracts the ZIP)
+      String modelPath = await ModelLoader().loadFromAssets(_modelAssetPath);
+      
+      // 3. INTELLIGENT PATH CORRECTION
+      final dir = Directory(modelPath);
+      
+      if (!await dir.exists()) {
+        debugPrint("⚠️ Target directory missing: $modelPath");
+        
+        // CHECK PARENT (The Flattened Zip Fix - IMPROVED LOGIC)
+        // Previous method failed on directory names, this method checks paths directly.
+        final parentDir = dir.parent;
+        if (await parentDir.exists()) {
+           final children = parentDir.listSync();
+           debugPrint("📂 Scanning parent directory: ${parentDir.path}");
+           
+           // Robust check for 'conf' folder regardless of path separator
+           bool hasConf = children.any((e) => e.path.endsWith("/conf") || e.path.endsWith("\\conf") || e.path.endsWith("conf"));
+           
+           if (hasConf) {
+             debugPrint("✅ Found 'conf' in parent directory. Using parent path.");
+             modelPath = parentDir.path;
+           } else {
+             throw FileSystemException("Extraction failed. 'conf' folder not found in parent.", modelPath);
+           }
+        } else {
+           throw FileSystemException("Extraction failed. Parent directory missing.", modelPath);
+        }
+      } else {
+        // Standard check for nested wrapper folder (e.g. model/model/conf)
+        final List<FileSystemEntity> children = dir.listSync();
+        if (children.length == 1 && children.first is Directory) {
+          debugPrint("📂 Detected nested model folder: ${children.first.path}");
+          modelPath = children.first.path;
+        }
+      }
+
+      debugPrint("🚀 Loading Model from: $modelPath");
       _model = await _vosk.createModel(modelPath);
       
-      // 3. Create Recognizer
+      // 4. Create Recognizer
       _recognizer = await _vosk.createRecognizer(
         model: _model!,
         sampleRate: 16000,
       );
 
-      // 4. Create Speech Service
+      // 5. Create Speech Service
       if (_recognizer != null) {
-        // FIX: Changed 'createSpeechService' to 'initSpeechService'
         _speechService = await _vosk.initSpeechService(_recognizer!);
         _setupListeners();
         setState(() {
@@ -111,13 +165,17 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Error: $e");
-      setState(() => _status = 'Model Load Failed. Check Assets.');
+      debugPrint("❌ Error: $e");
+      String errorMsg = e.toString();
+      if (errorMsg.contains("ASSET NOT FOUND")) {
+        setState(() => _status = 'Error: zip file not found in assets.');
+      } else {
+        setState(() => _status = 'Load Failed: $e');
+      }
     }
   }
 
   void _setupListeners() {
-    // Listen for Partial Results (Interim)
     _speechService!.onPartial().listen((partialJson) {
       Map<String, dynamic> data = jsonDecode(partialJson);
       setState(() {
@@ -125,15 +183,13 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
       });
     });
 
-    // Listen for Final Results
     _speechService!.onResult().listen((resultJson) {
       Map<String, dynamic> data = jsonDecode(resultJson);
       String text = data['text'] ?? '';
-      
       if (text.isNotEmpty) {
         setState(() {
           _transcribedText += '$text\n';
-          _interimText = ''; // Clear interim
+          _interimText = '';
           _scrollToBottom();
         });
       }
@@ -157,7 +213,6 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
         _isRecognizing = false;
         _status = 'Ready (Offline)';
         if (_interimText.isNotEmpty) {
-           // Append whatever was left in interim
            _transcribedText += '$_interimText\n';
            _interimText = '';
            _scrollToBottom();
@@ -189,8 +244,6 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- UI Logic from Previous Cloud Version ---
-    
     // Dynamic background color: Black if text is white, otherwise White
     final Color boxBackgroundColor = _displayTextColor == Colors.white ? Colors.black : Colors.white;
 
@@ -207,7 +260,7 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
       ],
     );
 
-    // Style for LIVE text (Follows user configuration)
+    // Style for LIVE text
     final TextStyle liveTextStyle = TextStyle(
       fontFamily: 'Manrope',
       fontSize: _displayTextSize,
@@ -215,7 +268,7 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
       fontWeight: FontWeight.normal,
     );
 
-    // Style for HISTORY text (Fixed size 12, user color)
+    // Style for HISTORY text
     final TextStyle historyTextStyle = TextStyle(
       fontFamily: 'Manrope',
       fontSize: 12.0, 
@@ -245,7 +298,7 @@ class _LocalTranscriptionScreenState extends State<LocalTranscriptionScreen> {
               style: TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 14,
-                color: _status.contains('Failed') || _status.contains('Denied') 
+                color: _status.contains('Error') || _status.contains('Failed') || _status.contains('Denied') 
                     ? Colors.redAccent 
                     : const Color(0xFF49225B),
                 fontWeight: FontWeight.bold
