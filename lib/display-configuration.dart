@@ -16,12 +16,12 @@ class _DisplayConfigurationScreenState extends State<DisplayConfigurationScreen>
   static const String _textColorKey = 'textColorValue';
 
   // Default constants for reset functionality
-  // Range is 10 to 20, so 15.0 is the exact middle size.
-  static const double _resetTextSize = 15.0; 
+  // Range is 15 to 30, so 22.5 is the exact middle size.
+  static const double _resetTextSize = 22.5; 
   static const AlignmentDirectional _resetAlignment = AlignmentDirectional.center;
   static const Color _resetTextColor = Colors.black;
 
-  double _currentTextSize = 16.0; // Default text size
+  double _currentTextSize = 22.5; // Default text size
   AlignmentDirectional _currentPreviewAlignment = AlignmentDirectional.center;
   Color _currentTextColor = Colors.black; // Default text color
 
@@ -71,8 +71,15 @@ class _DisplayConfigurationScreenState extends State<DisplayConfigurationScreen>
     final prefs = await SharedPreferences.getInstance();
     
     // Load text size
-    final loadedTextSize = prefs.getDouble(_textSizeKey);
+    double? loadedTextSize = prefs.getDouble(_textSizeKey);
     
+    // Safety check: If loaded size is outside the new bounds (15-30), clamp it.
+    // This prevents crashes for users who saved '10.0' previously.
+    if (loadedTextSize != null) {
+      if (loadedTextSize < 15.0) loadedTextSize = 15.0;
+      if (loadedTextSize > 30.0) loadedTextSize = 30.0;
+    }
+
     // Load text color (stored as an integer value)
     final loadedTextColorValue = prefs.getInt(_textColorKey);
     
@@ -81,7 +88,7 @@ class _DisplayConfigurationScreenState extends State<DisplayConfigurationScreen>
 
     setState(() {
       // Apply loaded values or use defaults if they don't exist
-      _currentTextSize = loadedTextSize ?? 16.0;
+      _currentTextSize = loadedTextSize ?? 22.5;
       
       _currentTextColor = loadedTextColorValue != null
           ? Color(loadedTextColorValue)
@@ -270,9 +277,9 @@ class _DisplayConfigurationScreenState extends State<DisplayConfigurationScreen>
                     Expanded(
                       child: Slider(
                         value: _currentTextSize,
-                        min: 10,
-                        max: 20, // Max text size
-                        divisions: 10, // Allows for smaller increments
+                        min: 15, // Updated MINIMUM
+                        max: 30, // Updated MAXIMUM
+                        divisions: 15, // Adjusted divisions for the new range (15 steps)
                         activeColor: const Color(0xFF49225B), // Adjust color
                         inactiveColor: const Color(0xFFD3B3E7), // Adjust color
                         onChanged: (double value) {
@@ -366,9 +373,7 @@ class _DisplayConfigurationScreenState extends State<DisplayConfigurationScreen>
               ),
               // --- End Buttons ---
       
-              // --- REPLACED SPACER WITH SIZEDBOX ---
               const SizedBox(height: 40), 
-              // Using Spacer() inside SingleChildScrollView causes a crash.
               
               const Padding(
                 padding: EdgeInsets.only(bottom: 16.0),
