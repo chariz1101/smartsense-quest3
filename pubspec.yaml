@@ -14,16 +14,15 @@ dependencies:
     sdk: flutter
   # For WebSocket communication
   web_socket_channel: ^3.0.3 # Bumping to latest stable version
-  # For handling runtime permissions
-  permission_handler: ^12.0.1 # Bumping to latest stable version
-
-  # Critical Fix: Using the newest version of record to resolve internal cross-platform errors
   record: ^6.1.2
-
-
+  vosk_flutter: ^0.3.48
   shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.8
   frame_sdk: ^0.0.7
+
+dependency_overrides:
+  permission_handler: ^11.3.1
+  permission_handler_android: ^12.0.6
 
 dev_dependencies:
   flutter_test:
@@ -31,20 +30,21 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
-
   uses-material-design: true
 
   fonts:
-  - family: SmartSense # Choose a name for your font family
-    fonts:
+    - family: SmartSense
+      fonts:
         - asset: assets/fonts/LilitaOne-Regular.ttf
-  - family: Manrope
-    fonts:
+    - family: Manrope
+      fonts:
         - asset: assets/fonts/Manrope-ExtraBold.otf
         - asset: assets/fonts/Manrope-Regular.otf
         - asset: assets/fonts/Manrope-SemiBold.otf
 
+  # FIX: Indent 'assets' so it is part of the 'flutter' section
   assets:
+    - assets/models/vosk-model-small-en-us-0.15/
     - assets/icons/linkedin.png
     - assets/icons/icon-park-outline_alignment-left-bottom.png
     - assets/icons/tabler_align-box-center-bottom.png
@@ -55,5 +55,4 @@ flutter:
     - assets/purple-glasses.png
     - assets/white-glasses.png
     - assets/code3.png
-
-
+    
