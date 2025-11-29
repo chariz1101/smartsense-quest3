@@ -34,38 +34,13 @@ class MainInterface extends StatelessWidget {
               ),
             ),
           ),
+          
+          // --- BUTTONS (Width increased to 280) ---
+
           Positioned(
-            top: 220, // Adjust this value to position the battery and device status
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 60.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Battery Remaining: 50%',
-                    style: TextStyle(
-                      fontFamily: 'Manrope',
-                      fontSize: 13,
-                      color: Color(0xFF49225B),
-                    ),
-                  ),
-                  const SizedBox(height: 0),
-                  const Text(
-                    'Device Status: Not Connected',
-                    style: TextStyle(
-                      fontFamily: 'Manrope',
-                      fontSize: 13,
-                      color: Color(0xFF49225B),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: 320, // Adjust this value to position the first button
+            top: 260, 
             child: SizedBox(
-              width: 210,
+              width: 280, // Increased width
               height: 45,
               child: ElevatedButton(
                 onPressed: () {
@@ -82,7 +57,8 @@ class MainInterface extends StatelessWidget {
                   ),
                   textStyle: const TextStyle(
                     fontFamily: 'Manrope',
-                    fontSize: 16,
+                    fontSize: 14, 
+                    fontWeight: FontWeight.bold, // Bold for first button
                   ),
                   padding: EdgeInsets.zero,
                 ),
@@ -105,7 +81,8 @@ class MainInterface extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontFamily: 'Manrope',
-                        fontSize: 16,
+                        fontSize: 14, 
+                        fontWeight: FontWeight.bold, 
                       ),
                     ),
                   ),
@@ -114,9 +91,9 @@ class MainInterface extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 381, // Adjust this value to position the second button
+            top: 321, 
             child: SizedBox(
-              width: 210,
+              width: 280, // Increased width
               height: 45,
               child: ElevatedButton(
                 onPressed: () {
@@ -126,14 +103,16 @@ class MainInterface extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF49225B).withOpacity(0.63),
+                  // Updated to use withValues() to fix deprecation warning
+                  backgroundColor: const Color(0xFF49225B).withValues(alpha: 0.63),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   textStyle: const TextStyle(
                     fontFamily: 'Manrope',
-                    fontSize: 16,
+                    fontSize: 14, 
+                    fontWeight: FontWeight.w600, // SemiBold
                   ),
                 ),
                 child: const Text('START CLOUD TRANSCRIPTION'),
@@ -141,9 +120,9 @@ class MainInterface extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 442, // Adjust this value to position the third button
+            top: 382, 
             child: SizedBox(
-              width: 210,
+              width: 280, // Increased width
               height: 45,
               child: ElevatedButton(
                 onPressed: () {
@@ -153,14 +132,16 @@ class MainInterface extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF49225B).withOpacity(0.63),
+                  // Updated to use withValues() to fix deprecation warning
+                  backgroundColor: const Color(0xFF49225B).withValues(alpha: 0.63),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   textStyle: const TextStyle(
                     fontFamily: 'Manrope',
-                    fontSize: 16,
+                    fontSize: 14, 
+                    fontWeight: FontWeight.w600, // SemiBold
                   ),
                 ),
                 child: const Text('CONFIGURE DISPLAY'),
@@ -168,9 +149,9 @@ class MainInterface extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 503, // Adjust this value to position the fourth button
+            top: 443, 
             child: SizedBox(
-              width: 210,
+              width: 280, // Increased width
               height: 45,
               child: ElevatedButton(
                 onPressed: () {
@@ -180,14 +161,16 @@ class MainInterface extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF49225B).withOpacity(0.63),
+                  // Updated to use withValues() to fix deprecation warning
+                  backgroundColor: const Color(0xFF49225B).withValues(alpha: 0.63),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   textStyle: const TextStyle(
                     fontFamily: 'Manrope',
-                    fontSize: 16,
+                    fontSize: 14, 
+                    fontWeight: FontWeight.w600, // SemiBold
                   ),
                 ),
                 child: const Text('ABOUT US'),
@@ -202,6 +185,7 @@ class MainInterface extends StatelessWidget {
                 fontFamily: 'Manrope',
                 fontSize: 10,
                 color: Color(0xFF49225B),
+                fontWeight: FontWeight.w400, 
               ),
             ),
           ),
